@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}Orbit - Home{% endblock %}
+
+{% block content %}
+<div class="hero">
+    <h1>Open Re-implementation of Biomedical Literature APIs</h1>
+    <p>Orbit is a framework for self-hosting clean room re-implementations of biomedical literature APIs including PubMed Entrez and ClinicalTrials.gov.</p>
+    <a href="/docs" class="btn">API</a>
+    <a href="https://github.com/health-nlp/orbit" class="btn">Code</a>
+</div>
+<div class="features">
+    <div class="feature">
+        <h3>PubMed Entrez</h3>
+        <p>Re-implementation of NCBI Entrez E-utilities for PubMed search, fetch, and summary operations.</p>
+    </div>
+    <div class="feature">
+        <h3>ClinicalTrials.gov</h3>
+        <p>API for searching and retrieving clinical trial information from ClinicalTrials.gov.</p>
+    </div>
+    <div class="feature">
+        <h3>Self-Hosted</h3>
+        <p>Full Docker-based deployment for local hosting with complete data control.</p>
+    </div>
+</div>
+{% endblock %}

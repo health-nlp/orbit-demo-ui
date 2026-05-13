@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}Contributors{% endblock %}
+
+{% block content %}
+<div class="hero">
+    <h1>Contributors</h1>
+    <p>Meet the team behind Orbit.</p>
+</div>
+
+<div class="contributors-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem;">
+    {% for contributor in [
+        {'name': 'Mert Okur', 'affiliation': 'Student, University of Tuebingen', 'image': 'https://via.placeholder.com/240'},
+        {'name': 'Shrestha Ghosh', 'affiliation': 'Postdoc, University of Tuebingen', 'image': 'https://via.placeholder.com/240'},
+        {'name': 'Harry Scells', 'affiliation': 'Junior Professor, University of Tuebingen', 'image': 'https://via.placeholder.com/240'},
+    ] %}
+    <div class="contributor-card" style="border: 1px solid #eee; border-radius: 10px; overflow: hidden; background: #fff; text-align: center; padding: 1rem;">
+        <img src="{{ contributor.image }}" alt="{{ contributor.name }}" style="width: 100%; height: auto; display: block; object-fit: cover;">
+        <div style="padding: 1rem;">
+            <h3 style="margin-bottom: 0.5rem; color: #1a1a2e;">{{ contributor.name }}</h3>
+            <p style="color: #555;">{{ contributor.affiliation }}</p>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
