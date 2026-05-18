@@ -5,22 +5,27 @@
 {% block content %}
 <div class="hero">
     <h1>Open Re-implementation of Biomedical Literature APIs</h1>
-    <p>Orbit is a framework for self-hosting clean room re-implementations of biomedical literature APIs including PubMed Entrez and ClinicalTrials.gov.</p>
-    <a href="/docs" class="btn">API</a>
-    <a href="https://github.com/health-nlp/orbit" class="btn">Code</a>
+    <p>Orbit is a framework for self-hosting clean room re-implementations of biomedical literature APIs.</p>
 </div>
 <div class="features">
     <div class="feature">
-        <h3>PubMed Entrez</h3>
-        <p>Re-implementation of NCBI Entrez E-utilities for PubMed search, fetch, and summary operations.</p>
+        <h3>Open re-implementation</h3>
+        <p>NCBI Entrez API for PubMed and API for ClinicalTrials.gov.</p>
     </div>
     <div class="feature">
-        <h3>ClinicalTrials.gov</h3>
-        <p>API for searching and retrieving clinical trial information from ClinicalTrials.gov.</p>
+        <h3>Powered by <code>pybool-ir</code></h3>
+        <p>Orbit uses <code><a href="https://github.com/hscells/pybool_ir">pybool-ir</a></code> to index and query the documents.</p>
     </div>
     <div class="feature">
         <h3>Self-Hosted</h3>
         <p>Full Docker-based deployment for local hosting with complete data control.</p>
+    </div>
+</div>
+<div class="use-cases" style="margin-top: 2rem; text-align: center;">
+    <h2>Try it out!</h2>
+    <div class="use-case-buttons" style="margin-top: 1rem; display: flex; justify-content: center; flex-wrap: wrap; gap: 1rem;">
+        <a class="btn" href="/orbit-ct">Clinical Trials</a>
+        <a class="btn" href="/compare">Compare</a>
     </div>
 </div>
 {% endblock %}

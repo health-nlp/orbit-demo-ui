@@ -1,0 +1,348 @@
+{% extends "base.html" %}
+{% block title %}Orbit-CT API{% endblock %}
+
+{% block extra_head %}
+<style>
+  .ct-layout {
+    display: flex;
+    gap: 2rem;
+    align-items: flex-start;
+    margin-top: 1.5rem;
+  }
+  .ct-sidebar {
+    width: 220px;
+    flex-shrink: 0;
+    position: sticky;
+    top: 1.5rem;
+  }
+  .ct-sidebar h2 {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #999;
+    margin-bottom: 0.75rem;
+  }
+  .endpoint-btn {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 0.35rem;
+    border: none;
+    border-radius: 5px;
+    background: #f4f4f4;
+    cursor: pointer;
+    font-size: 0.82rem;
+    color: #1a1a2e;
+    transition: background 0.15s;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .endpoint-btn:hover { background: #e8e8f0; }
+  .endpoint-btn.active { background: #1a1a2e; color: #fff; }
+  .method-badge {
+    display: inline-block;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 1px 5px;
+    border-radius: 3px;
+    margin-right: 6px;
+    vertical-align: middle;
+    background: #4caf50;
+    color: #fff;
+  }
+  .ct-panel {
+    flex: 1;
+    min-width: 0;
+  }
+  .ct-panel h1 {
+    font-size: 1.3rem;
+    color: #1a1a2e;
+    margin-bottom: 0.25rem;
+  }
+  .ct-panel .path-label {
+    font-size: 0.8rem;
+    color: #888;
+    margin-bottom: 1.5rem;
+    font-family: monospace;
+  }
+  .params-section h3 {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: #999;
+    margin-bottom: 0.6rem;
+  }
+  .param-row {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+  .param-row label {
+    width: 130px;
+    flex-shrink: 0;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #333;
+  }
+  .param-row label .req { color: #e53935; margin-left: 2px; }
+  .param-row input {
+    flex: 1;
+    padding: 0.4rem 0.6rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    font-family: monospace;
+    background: #fafafa;
+    transition: border-color 0.15s;
+  }
+  .param-row input:focus { outline: none; border-color: #1a1a2e; background: #fff; }
+  .param-hint { font-size: 0.72rem; color: #aaa; margin-left: 0; }
+  .run-btn {
+    margin-top: 1.25rem;
+    padding: 0.55rem 1.4rem;
+    background: #1a1a2e;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .run-btn:hover { background: #16213e; }
+  .run-btn:disabled { background: #999; cursor: not-allowed; }
+  .response-block {
+    margin-top: 1.5rem;
+    border: 1px solid #eee;
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .response-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0.75rem;
+    background: #f7f7f7;
+    border-bottom: 1px solid #eee;
+    font-size: 0.8rem;
+    color: #555;
+  }
+  .status-ok { color: #2e7d32; font-weight: 600; }
+  .status-err { color: #c62828; font-weight: 600; }
+  .copy-btn {
+    padding: 0.25rem 0.6rem;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    background: #fff;
+    font-size: 0.75rem;
+    cursor: pointer;
+    color: #555;
+  }
+  .copy-btn:hover { background: #eee; }
+  .response-body {
+    padding: 0.75rem;
+    background: #fff;
+    overflow-x: auto;
+    max-height: 480px;
+    overflow-y: auto;
+  }
+  .response-body pre {
+    font-size: 0.8rem;
+    font-family: monospace;
+    white-space: pre-wrap;
+    word-break: break-all;
+    margin: 0;
+    color: #1a1a2e;
+  }
+  .spinner {
+    display: none;
+    width: 16px; height: 16px;
+    border: 2px solid #ccc;
+    border-top-color: #1a1a2e;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    margin-left: 0.5rem;
+    vertical-align: middle;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .welcome {
+    color: #aaa;
+    font-size: 0.9rem;
+    margin-top: 2rem;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ct-layout">
+  <aside class="ct-sidebar">
+    <h2>Endpoints</h2>
+    <div id="endpoint-list"></div>
+  </aside>
+  <section class="ct-panel">
+    <div id="panel-welcome" class="welcome">Select an endpoint to get started.</div>
+    <div id="panel-form" style="display:none">
+      <h1 id="ep-summary"></h1>
+      <div class="path-label" id="ep-path"></div>
+      <div class="params-section">
+        <h3>Parameters</h3>
+        <div id="ep-params"></div>
+      </div>
+      <button class="run-btn" id="run-btn" onclick="sendRequest()">Send</button>
+      <span class="spinner" id="spinner"></span>
+      <div id="response-area"></div>
+    </div>
+  </section>
+</div>
+
+<script>
+const BASE = "http://localhost:8000";
+let currentEndpoint = null;
+
+const endpoints = [
+  {
+    method: "GET",
+    path: "/ct/api/v2/version",
+    summary: "Orbit Version",
+    params: []
+  },
+  {
+    method: "GET",
+    path: "/ct/api/v2/studies",
+    summary: "Studies",
+    params: [
+      { name: "query.term", in: "query", required: true, type: "string", description: "Search term (Essie expression syntax)" },
+      { name: "format", in: "query", required: false, type: "string", description: "Response format", default: "json" },
+      { name: "pageStart", in: "query", required: false, type: "integer", description: "Start index", default: "0" },
+      { name: "pageSize", in: "query", required: false, type: "integer", description: "Page size", default: "20" }
+    ]
+  },
+  {
+    method: "GET",
+    path: "/ct/api/v2/studies/metadata",
+    summary: "Studies Metadata",
+    params: []
+  },
+  {
+    method: "GET",
+    path: "/ct/api/v2/studies/search-areas",
+    summary: "Studies Search Areas",
+    params: []
+  },
+  {
+    method: "GET",
+    path: "/ct/api/v2/studies/{nctId}",
+    summary: "Single Study",
+    params: [
+      { name: "nctId", in: "path", required: true, type: "string", description: "NCT ID (e.g. NCT04280705)" }
+    ]
+  }
+];
+
+function buildSidebar() {
+  const list = document.getElementById("endpoint-list");
+  endpoints.forEach((ep, i) => {
+    const btn = document.createElement("button");
+    btn.className = "endpoint-btn";
+    btn.dataset.index = i;
+    btn.innerHTML = `<span class="method-badge">GET</span>${ep.summary}`;
+    btn.onclick = () => selectEndpoint(i, btn);
+    list.appendChild(btn);
+  });
+}
+
+function selectEndpoint(i, btn) {
+  document.querySelectorAll(".endpoint-btn").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  currentEndpoint = endpoints[i];
+  document.getElementById("panel-welcome").style.display = "none";
+  document.getElementById("panel-form").style.display = "block";
+  document.getElementById("ep-summary").textContent = currentEndpoint.summary;
+  document.getElementById("ep-path").textContent = `GET ${BASE}${currentEndpoint.path}`;
+  document.getElementById("response-area").innerHTML = "";
+  renderParams(currentEndpoint.params);
+}
+
+function renderParams(params) {
+  const container = document.getElementById("ep-params");
+  if (params.length === 0) {
+    container.innerHTML = '<p style="color:#aaa;font-size:0.85rem">No parameters.</p>';
+    return;
+  }
+  container.innerHTML = params.map(p => `
+    <div class="param-row">
+      <label for="param-${p.name}">${p.name}${p.required ? '<span class="req">*</span>' : ''}</label>
+      <div style="flex:1">
+        <input id="param-${p.name}" type="text" placeholder="${p.default ?? ''}" />
+        <div class="param-hint">${p.description ?? ''}</div>
+      </div>
+    </div>
+  `).join("");
+}
+
+async function sendRequest() {
+  if (!currentEndpoint) return;
+  const btn = document.getElementById("run-btn");
+  const spinner = document.getElementById("spinner");
+  btn.disabled = true;
+  spinner.style.display = "inline-block";
+
+  let url = BASE + currentEndpoint.path;
+  const queryParts = [];
+
+  for (const p of currentEndpoint.params) {
+    const val = document.getElementById(`param-${p.name}`)?.value.trim();
+    if (!val && p.required) {
+      alert(`"${p.name}" is required.`);
+      btn.disabled = false; spinner.style.display = "none";
+      return;
+    }
+    if (val) {
+      if (p.in === "path") {
+        url = url.replace(`{${p.name}}`, encodeURIComponent(val));
+      } else {
+        queryParts.push(`${encodeURIComponent(p.name)}=${encodeURIComponent(val)}`);
+      }
+    }
+  }
+
+  if (queryParts.length) url += "?" + queryParts.join("&");
+
+  let status = null, body = null, ok = false;
+  try {
+    const resp = await fetch(url);
+    status = resp.status;
+    ok = resp.ok;
+    const text = await resp.text();
+    try { body = JSON.stringify(JSON.parse(text), null, 2); }
+    catch { body = text; }
+  } catch (e) {
+    body = String(e);
+  }
+
+  document.getElementById("response-area").innerHTML = `
+    <div class="response-block">
+      <div class="response-header">
+        <span class="${ok ? 'status-ok' : 'status-err'}">${status ?? 'Network error'}</span>
+        <button class="copy-btn" onclick="copyResponse()">Copy</button>
+      </div>
+      <div class="response-body"><pre id="resp-pre">${escHtml(body)}</pre></div>
+    </div>`;
+
+  btn.disabled = false; spinner.style.display = "none";
+}
+
+function copyResponse() {
+  const text = document.getElementById("resp-pre")?.textContent ?? "";
+  navigator.clipboard.writeText(text);
+}
+
+function escHtml(s) {
+  return (s ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+buildSidebar();
+</script>
+{% endblock %}
