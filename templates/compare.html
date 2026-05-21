@@ -187,9 +187,13 @@ document.getElementById('form-original').addEventListener('submit', async (event
         const data = await response.json();
         resultsEl.innerHTML = '';
         const officialLabel = official === 'pubmed' ? 'PubMed Entrez API' : 'ClinicalTrials.gov API';
-        resultsEl.appendChild(renderResult('Orbit API', data.orbit, data.orbit?.totalCount ?? null, 'trials'));
         const officialData = data.clinicaltrials ?? data.pubmed;
-        const officialCount = data.clinicaltrials?.studies?.length ?? data.pubmed?.count ?? null;
+
+        const orbitCount = data.orbit?.totalCount ?? (data.orbit?.esearch?.count != null ? parseInt(data.orbit.esearch.count, 10) : null);
+        const officialCount = data.clinicaltrials?.studies?.length ?? (data.pubmed?.esearchresult?.count != null ? parseInt(data.pubmed.esearchresult.count, 10) : null);
+        console.log(orbitCount, officialCount);
+        console.log(data);
+        resultsEl.appendChild(renderResult('Orbit API', data.orbit, orbitCount, 'trials'));
         resultsEl.appendChild(renderResult(officialLabel, officialData, officialCount, 'trials'));
     } catch (err) {
         resultsEl.innerHTML = `<div class="result-card"><h3>Request failed</h3><p style="color:#a00;">${err.message}</p></div>`;
@@ -208,8 +212,10 @@ document.getElementById('form-biomed').addEventListener('submit', async (event) 
         if (!response.ok) throw new Error(`Server returned ${response.status}`);
         const data = await response.json();
         resultsEl.innerHTML = '';
-        resultsEl.appendChild(renderResult('PubMed', data.pubmed, data.pubmed?.totalCount ?? null, 'results'));
-        resultsEl.appendChild(renderResult('ClinicalTrials', data.clinicaltrials, data.clinicaltrials?.totalCount ?? null, 'results'));
+        const pubmedCount = (data.pubmed?.esearch?.count != null ? parseInt(data.pubmed.esearch.count, 10) : null);
+        const ctCount = data.clinicaltrials?.totalCount ?? null;
+        resultsEl.appendChild(renderResult('PubMed', data.pubmed, pubmedCount, 'results'));
+        resultsEl.appendChild(renderResult('ClinicalTrials', data.clinicaltrials, ctCount, 'results'));
     } catch (err) {
         resultsEl.innerHTML = `<div class="result-card"><h3>Request failed</h3><p style="color:#a00;">${err.message}</p></div>`;
     }

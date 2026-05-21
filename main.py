@@ -4,6 +4,8 @@ import json
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote_plus
 from urllib.request import Request, urlopen
+# import logging
+
 
 import jinja2
 from fastapi import FastAPI
@@ -25,8 +27,8 @@ JINJA_ENV = jinja2.Environment(
     loader=jinja2.FileSystemLoader(str(TEMPLATES_DIR)),
     autoescape=jinja2.select_autoescape(["html", "xml"]),
 )
-BASE_URL = "http://localhost:8000" # <---- define the API base url here.
-
+# BASE_URL = "http://localhost:8000" # <---- define the API base url here.
+BASE_URL = "https://orbit.health-nlp.com"
 async def fetch_json_url(url: str) -> dict:
     def _fetch() -> dict:
         req = Request(url, headers={"User-Agent": "Orbit-UI/1.0"})
@@ -67,13 +69,14 @@ async def compare_original(query: str, official: str = "clinicaltrials"):
 
     if official == "pubmed":
         official_url = f"https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term={term}&retmode=json"
-        orbit_url = f"{BASE_URL}/entrez/eutils/esearch.fcgi?term={term}"
+        orbit_url = f"{BASE_URL}/entrez/eutils/esearch.fcgi?term={term}&retmode=json"
         official_key = "pubmed"
     else:
         official_url = f"https://clinicaltrials.gov/api/v2/studies?query.term={term}"
         orbit_url = f"{BASE_URL}/ct/api/v2/studies?query.term={term}"
         official_key = "clinicaltrials"
 
+    print(f"[orbit] {orbit_url}")
     results = {}
     try:
         results["orbit"] = await fetch_json_url(orbit_url)
@@ -104,7 +107,7 @@ async def compare_biomed_lit(query: str):
         results["clinicaltrials"] = {"error": str(exc)}
 
     try:
-        orbit_pubmed_url = f"{BASE_URL}/entrez/eutils/esearch.fcgi?term={term}"
+        orbit_pubmed_url = f"{BASE_URL}/entrez/eutils/esearch.fcgi?term={term}&retmode=json"
         results["pubmed"] = await fetch_json_url(orbit_pubmed_url)
     except (HTTPError, URLError, json.JSONDecodeError, OSError) as exc:
         results["pubmed"] = {"error": str(exc)}
