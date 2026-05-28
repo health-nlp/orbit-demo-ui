@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Orbit-CT API</title>
+    <style>
+        html, body { min-height: 100%; width: 100%; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6; color: #333;
+            display: flex; flex-direction: column; min-height: 100vh; background: #fff;
+        }
+        header { background: #1a1a2e; color: white; width: 100%; padding: 1rem 1.5rem; }
+        nav {
+            display: flex; justify-content: space-between; align-items: center;
+            max-width: 1200px; width: min(1200px, 100%); margin: 0 auto;
+        }
+        .logo { font-size: 1.5rem; font-weight: bold; }
+        .logo a { color: white; text-decoration: none; }
+        .nav-tabs { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+        .nav-tabs a { color: white; text-decoration: none; padding: 0.5rem 1rem; border-radius: 4px; }
+        .nav-tabs a:hover, .nav-tabs a.active { background: #16213e; }
+        main { max-width: 1200px; width: min(1200px, 100%); margin: 0 auto; padding: 2rem 1.5rem; flex: 1; }
+        footer { text-align: center; padding: 2rem 1.5rem; background: #f5f5f5; margin-top: 3rem; width: 100%; }
+        footer a { color: #1a1a2e; text-decoration: none; }
+
+        .ct-layout { display: flex; gap: 2rem; align-items: flex-start; margin-top: 1.5rem; }
+        .ct-sidebar { width: 220px; flex-shrink: 0; position: sticky; top: 1.5rem; }
+        .ct-sidebar h2 { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: #999; margin-bottom: 0.75rem; }
+        .endpoint-btn {
+            display: block; width: 100%; text-align: left; padding: 0.5rem 0.75rem;
+            margin-bottom: 0.35rem; border: none; border-radius: 5px; background: #f4f4f4;
+            cursor: pointer; font-size: 0.82rem; color: #1a1a2e; transition: background 0.15s;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .endpoint-btn:hover { background: #e8e8f0; }
+        .endpoint-btn.active { background: #1a1a2e; color: #fff; }
+        .method-badge {
+            display: inline-block; font-size: 0.65rem; font-weight: 700;
+            padding: 1px 5px; border-radius: 3px; margin-right: 6px;
+            vertical-align: middle; background: #4caf50; color: #fff;
+        }
+        .ct-panel { flex: 1; min-width: 0; }
+        .ct-panel h1 { font-size: 1.3rem; color: #1a1a2e; margin-bottom: 0.25rem; }
+        .ct-panel .path-label { font-size: 0.8rem; color: #888; margin-bottom: 1.5rem; font-family: monospace; }
+        .params-section h3 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.07em; color: #999; margin-bottom: 0.6rem; }
+        .param-row { display: flex; align-items: baseline; gap: 0.75rem; margin-bottom: 0.75rem; }
+        .param-row label { width: 130px; flex-shrink: 0; font-size: 0.85rem; font-weight: 500; color: #333; }
+        .param-row label .req { color: #e53935; margin-left: 2px; }
+        .param-row input {
+            flex: 1; padding: 0.4rem 0.6rem; border: 1px solid #ddd; border-radius: 4px;
+            font-size: 0.85rem; font-family: monospace; background: #fafafa; transition: border-color 0.15s;
+        }
+        .param-row input:focus { outline: none; border-color: #1a1a2e; background: #fff; }
+        .param-hint { font-size: 0.72rem; color: #aaa; margin-left: 0; }
+        .run-btn {
+            margin-top: 1.25rem; padding: 0.55rem 1.4rem; background: #1a1a2e; color: #fff;
+            border: none; border-radius: 4px; font-size: 0.9rem; cursor: pointer; transition: background 0.15s;
+        }
+        .run-btn:hover { background: #16213e; }
+        .run-btn:disabled { background: #999; cursor: not-allowed; }
+        .response-block { margin-top: 1.5rem; border: 1px solid #eee; border-radius: 6px; overflow: hidden; }
+        .response-header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0.5rem 0.75rem; background: #f7f7f7; border-bottom: 1px solid #eee;
+            font-size: 0.8rem; color: #555;
+        }
+        .status-ok { color: #2e7d32; font-weight: 600; }
+        .status-err { color: #c62828; font-weight: 600; }
+        .copy-btn {
+            padding: 0.25rem 0.6rem; border: 1px solid #ddd; border-radius: 3px;
+            background: #fff; font-size: 0.75rem; cursor: pointer; color: #555;
+        }
+        .copy-btn:hover { background: #eee; }
+        .response-body { padding: 0.75rem; background: #fff; overflow-x: auto; max-height: 600px; overflow-y: auto; }
+        .spinner {
+            display: none; width: 16px; height: 16px; border: 2px solid #ccc;
+            border-top-color: #1a1a2e; border-radius: 50%;
+            animation: spin 0.7s linear infinite; margin-left: 0.5rem; vertical-align: middle;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .welcome { color: #aaa; font-size: 0.9rem; margin-top: 2rem; }
+
+        /* Interactive JSON tree */
+        .json-tree { font-family: monospace; font-size: 0.8rem; line-height: 1.6; color: #1a1a2e; }
+        .json-tree ul { list-style: none; padding-left: 1.2em; border-left: 1px solid #e0e0e0; margin: 0; }
+        .json-tree li { position: relative; }
+        .json-toggle {
+            cursor: pointer; user-select: none;
+            display: inline-flex; align-items: center; gap: 0.25em;
+        }
+        .json-toggle::before {
+            content: '▾';
+            font-size: 0.7em;
+            color: #888;
+            display: inline-block;
+            width: 1em;
+            transition: transform 0.15s;
+        }
+        .json-toggle.collapsed::before { transform: rotate(-90deg); }
+        .json-key { color: #1a1a2e; font-weight: 600; }
+        .json-str { color: #2e7d32; }
+        .json-num { color: #1565c0; }
+        .json-bool { color: #6a1a6a; }
+        .json-null { color: #999; }
+        .json-summary { color: #aaa; font-size: 0.75em; margin-left: 0.4em; }
+        .json-children.hidden { display: none; }
+    </style>
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="logo"><a href="index.html">Orbit</a></div>
+            <div class="nav-tabs">
+                <a href="orbit-ct.html" class="active">Orbit-CT</a>
+                <a href="compare.html">Compare</a>
+                <a href="https://orbit.health-nlp.com/docs">Docs</a>
+                <a href="https://github.com/health-nlp/orbit">Code</a>
+                <a href="contributors.html">Contributors</a>
+            </div>
+        </nav>
+    </header>
+    <main>
+        <div class="ct-layout">
+            <aside class="ct-sidebar">
+                <h2>Endpoints</h2>
+                <div id="endpoint-list"></div>
+            </aside>
+            <section class="ct-panel">
+                <div id="panel-welcome" class="welcome">Select an endpoint to get started.</div>
+                <div id="panel-form" style="display:none">
+                    <h1 id="ep-summary"></h1>
+                    <div class="path-label" id="ep-path"></div>
+                    <div id="ep-params-section" class="params-section">
+                        <!-- <h3>Parameters</h3> -->
+                        <div id="ep-params"></div>
+                        <button class="run-btn" id="run-btn" onclick="sendRequest()">Search</button>
+                        <span class="spinner" id="spinner"></span>
+                    </div>
+                    <div id="response-area"></div>
+                </div>
+            </section>
+        </div>
+    </main>
+    <footer>
+        <p>This work is licensed under a <a href="https://creativecommons.org/licenses/by/4.0/">Creative Commons Attribution 4.0 International License</a>.</p>
+    </footer>
+    <script>
+const BASE = "https://orbit.health-nlp.com";
+let currentEndpoint = null;
+
+const endpoints = [
+  {
+    method: "GET",
+    path: "/ct/api/v2/studies",
+    summary: "Studies by Search Term",
+    autoFetch: false,
+    params: [
+      { name: "query", in: "query", required: true, type: "string", description: "Search terms using Essie expression syntax" },
+      // { name: "format", in: "query", required: false, type: "string", description: "Response format", default: "json" },
+      // { name: "pageStart", in: "query", required: false, type: "integer", description: "Start index", default: "0" },
+      // { name: "pageSize", in: "query", required: false, type: "integer", description: "Page size", default: "20" }
+    ]
+  },
+  {
+    method: "GET",
+    path: "/ct/api/v2/studies/{nctId}",
+    summary: "Single Study",
+    autoFetch: false,
+    params: [
+      { name: "nctId", in: "path", required: true, type: "string", description: "NCT ID (e.g. NCT04280705)" }
+    ]
+  },
+  {
+    method: "GET",
+    path: "/ct/api/v2/studies/metadata",
+    summary: "Studies Metadata",
+    autoFetch: true,
+    params: []
+  },
+  {
+    method: "GET",
+    path: "/ct/api/v2/studies/search-areas",
+    summary: "Studies Search Areas",
+    autoFetch: true,
+    params: []
+  }
+];
+
+function buildSidebar() {
+  const list = document.getElementById("endpoint-list");
+  endpoints.forEach((ep, i) => {
+    const btn = document.createElement("button");
+    btn.className = "endpoint-btn";
+    btn.dataset.index = i;
+    btn.innerHTML = ep.summary;
+    btn.onclick = () => selectEndpoint(i, btn);
+    list.appendChild(btn);
+  });
+}
+
+function selectEndpoint(i, btn) {
+  document.querySelectorAll(".endpoint-btn").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  currentEndpoint = endpoints[i];
+  document.getElementById("panel-welcome").style.display = "none";
+  document.getElementById("panel-form").style.display = "block";
+  document.getElementById("ep-summary").textContent = currentEndpoint.summary;
+  document.getElementById("ep-path").textContent = `GET ${BASE}${currentEndpoint.path}`;
+  document.getElementById("response-area").innerHTML = "";
+
+  const paramsSection = document.getElementById("ep-params-section");
+  if (currentEndpoint.autoFetch) {
+    paramsSection.style.display = "none";
+    sendRequest();
+  } else {
+    paramsSection.style.display = "block";
+    renderParams(currentEndpoint.params);
+  }
+}
+
+function renderParams(params) {
+  const container = document.getElementById("ep-params");
+  if (params.length === 0) {
+    container.innerHTML = '<p style="color:#aaa;font-size:0.85rem">No parameters.</p>';
+    return;
+  }
+  container.innerHTML = params.map(p => `
+    <div class="param-row">
+      <label for="param-${p.name}">${p.name}${p.required ? '<span class="req">*</span>' : ''}</label>
+      <div style="flex:1">
+        <input id="param-${p.name}" type="text" placeholder="${p.default ?? ''}" />
+        <div class="param-hint">${p.description ?? ''}</div>
+      </div>
+    </div>
+  `).join("");
+}
+
+async function sendRequest() {
+  if (!currentEndpoint) return;
+  const btn = document.getElementById("run-btn");
+  const spinner = document.getElementById("spinner");
+  if (btn) btn.disabled = true;
+  if (spinner) spinner.style.display = "inline-block";
+
+  let url = BASE + currentEndpoint.path;
+  const queryParts = [];
+
+  for (const p of currentEndpoint.params) {
+    const val = document.getElementById(`param-${p.name}`)?.value.trim();
+    if (!val && p.required) {
+      alert(`"${p.name}" is required.`);
+      if (btn) btn.disabled = false;
+      if (spinner) spinner.style.display = "none";
+      return;
+    }
+    if (val) {
+      if (p.in === "path") {
+        url = url.replace(`{${p.name}}`, encodeURIComponent(val));
+      } else {
+        queryParts.push(`${encodeURIComponent(p.name)}=${encodeURIComponent(val)}`);
+      }
+    }
+  }
+
+  if (queryParts.length) url += "?" + queryParts.join("&");
+
+  let status = null, data = null, ok = false, errMsg = null;
+  try {
+    const resp = await fetch(url);
+    status = resp.status;
+    ok = resp.ok;
+    const text = await resp.text();
+    try { data = JSON.parse(text); }
+    catch { errMsg = text; }
+  } catch (e) {
+    errMsg = String(e);
+  }
+
+  const area = document.getElementById("response-area");
+  const treeContainer = document.createElement("div");
+  treeContainer.className = "response-body";
+
+  if (data !== null) {
+    const tree = document.createElement("div");
+    tree.className = "json-tree";
+    tree.appendChild(buildJsonNode(data));
+    treeContainer.appendChild(tree);
+  } else {
+    const pre = document.createElement("pre");
+    pre.style.cssText = "font-size:0.8rem;white-space:pre-wrap;word-break:break-all;color:#c62828";
+    pre.textContent = errMsg ?? "Unknown error";
+    treeContainer.appendChild(pre);
+  }
+
+  area.innerHTML = `
+    <div class="response-block">
+      <div class="response-header">
+        <span class="${ok ? 'status-ok' : 'status-err'}">${status ?? 'Network error'}</span>
+        <button class="copy-btn" onclick="copyResponse()">Copy JSON</button>
+      </div>
+    </div>`;
+  area.querySelector(".response-block").appendChild(treeContainer);
+  area._rawData = data;
+
+  if (btn) btn.disabled = false;
+  if (spinner) spinner.style.display = "none";
+}
+
+function copyResponse() {
+  const area = document.getElementById("response-area");
+  const text = area._rawData !== undefined ? JSON.stringify(area._rawData, null, 2) : "";
+  navigator.clipboard.writeText(text);
+}
+
+/* ── Interactive JSON tree builder ── */
+function buildJsonNode(value) {
+  if (Array.isArray(value)) return buildArray(value);
+  if (value !== null && typeof value === "object") return buildObject(value);
+  return buildLeaf(value);
+}
+
+function buildObject(obj) {
+  const keys = Object.keys(obj);
+  if (keys.length === 0) return span("{}", "json-null");
+
+  const wrapper = document.createElement("span");
+  const toggle = document.createElement("span");
+  toggle.className = "json-toggle";
+  toggle.appendChild(span("{", ""));
+  const summary = span(` ${keys.length} key${keys.length !== 1 ? "s" : ""} }`, "json-summary");
+  toggle.appendChild(summary);
+
+  const ul = document.createElement("ul");
+  ul.className = "json-children";
+  keys.forEach(k => {
+    const li = document.createElement("li");
+    li.appendChild(span(`"${k}": `, "json-key"));
+    li.appendChild(buildJsonNode(obj[k]));
+    ul.appendChild(li);
+  });
+
+  toggle.onclick = (e) => { e.stopPropagation(); toggleNode(toggle, ul, summary, keys.length, "key", "keys"); };
+  wrapper.appendChild(toggle);
+  wrapper.appendChild(ul);
+  return wrapper;
+}
+
+function buildArray(arr) {
+  if (arr.length === 0) return span("[]", "json-null");
+
+  const wrapper = document.createElement("span");
+  const toggle = document.createElement("span");
+  toggle.className = "json-toggle";
+  toggle.appendChild(span("[", ""));
+  const summary = span(` ${arr.length} item${arr.length !== 1 ? "s" : ""} ]`, "json-summary");
+  toggle.appendChild(summary);
+
+  const ul = document.createElement("ul");
+  ul.className = "json-children";
+  arr.forEach((v, i) => {
+    const li = document.createElement("li");
+    li.appendChild(span(`${i}: `, "json-key"));
+    li.appendChild(buildJsonNode(v));
+    ul.appendChild(li);
+  });
+
+  toggle.onclick = (e) => { e.stopPropagation(); toggleNode(toggle, ul, summary, arr.length, "item", "items"); };
+  wrapper.appendChild(toggle);
+  wrapper.appendChild(ul);
+  return wrapper;
+}
+
+function buildLeaf(value) {
+  if (value === null) return span("null", "json-null");
+  if (typeof value === "string") return span(`"${value}"`, "json-str");
+  if (typeof value === "number") return span(String(value), "json-num");
+  if (typeof value === "boolean") return span(String(value), "json-bool");
+  return span(String(value), "");
+}
+
+function toggleNode(toggle, ul, summary, count, singular, plural) {
+  const collapsed = toggle.classList.toggle("collapsed");
+  ul.classList.toggle("hidden", collapsed);
+  if (collapsed) {
+    summary.textContent = ` ${count} ${count !== 1 ? plural : singular} }`;
+  } else {
+    summary.textContent = ` ${count} ${count !== 1 ? plural : singular} }`;
+  }
+}
+
+function span(text, cls) {
+  const el = document.createElement("span");
+  if (cls) el.className = cls;
+  el.textContent = text;
+  return el;
+}
+
+buildSidebar();
+const firstBtn = document.querySelector(".endpoint-btn");
+if (firstBtn) firstBtn.click();
+    </script>
+</body>
+</html>
