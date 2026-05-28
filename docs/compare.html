@@ -56,14 +56,28 @@
         }
         .api-toggle label:not(:last-child) { border-right: 1px solid #ccc; }
         .api-toggle input[type="radio"]:checked + label { background: #16213e; color: white; }
-        .result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1.5rem; }
+        .result-grid { display: grid; grid-template-columns: repeat(2, 49%); gap: 1rem; margin-top: 1.5rem; overflow-x: auto; }
         .result-card { padding: 1rem; border: 1px solid #e3e3e3; border-radius: 10px; background: white; }
         .result-card h3 { margin-bottom: 0.75rem; color: #16213e; }
-        .result-card pre {
+        .result-card .json-tree-wrap {
             max-height: 400px; overflow: auto; background: #f6f8fa;
             padding: 1rem; border-radius: 8px; border: 1px solid #ddd;
-            white-space: pre-wrap; word-break: break-word;
+            margin-top: 0.5rem;
         }
+        /* Interactive JSON tree */
+        .json-tree { font-family: monospace; font-size: 0.8rem; line-height: 1.6; color: #1a1a2e; word-break: break-all; overflow-wrap: anywhere; }
+        .json-tree ul { list-style: none; padding-left: 1.2em; border-left: 1px solid #e0e0e0; margin: 0; }
+        .json-tree li { position: relative; }
+        .json-toggle { cursor: pointer; user-select: none; display: inline-flex; align-items: center; gap: 0.25em; }
+        .json-toggle::before { content: '▾'; font-size: 0.7em; color: #888; display: inline-block; width: 1em; transition: transform 0.15s; }
+        .json-toggle.collapsed::before { transform: rotate(-90deg); }
+        .json-key { color: #1a1a2e; font-weight: 600; }
+        .json-str { color: #2e7d32; }
+        .json-num { color: #1565c0; }
+        .json-bool { color: #6a1a6a; }
+        .json-null { color: #999; }
+        .json-summary { color: #aaa; font-size: 0.75em; margin-left: 0.4em; }
+        .json-children.hidden { display: none; }
     </style>
 </head>
 <body>
@@ -88,7 +102,7 @@
                 <p>Compare Orbit to official PubMed and ClinicalTrials.gov APIs.</p>
             </div>
             <form id="form-original">
-                <label for="query-original">Enter query terms to compare default results from Orbit and the official API.</label>
+                <label for="query-original">Enter query terms.</label>
                 <div class="search-row">
                     <input id="query-original" name="query" type="search" placeholder="e.g. oncology" required autocomplete="off" />
                     <div class="api-toggle">
@@ -107,10 +121,10 @@
         <div class="query-panel">
             <div>
                 <div class="panel-title">Multiple Biomed Sources</div>
-                <p>Use Orbit to query multiple biomedical sources at once.</p>
+                <p>Use Orbit to query multiple biomedical sources (PubMed and ClinicalTrials) at once.</p>
             </div>
             <form id="form-biomed">
-                <label for="query-biomed">Enter query terms to compare default PubMed and ClinicalTrials results from Orbit.</label>
+                <label for="query-biomed">Enter query terms.</label>
                 <div class="search-row">
                     <input id="query-biomed" name="query" type="search" placeholder="e.g. oncology" required autocomplete="off" />
                     <button class="btn" type="submit">Run</button>
@@ -126,13 +140,10 @@
     <script>
 const ORBIT_BASE = "https://orbit.health-nlp.com";
 
-function truncateJson(obj) {
-    return JSON.stringify(obj, null, 2);
-}
-
 function renderResult(title, payload, count, label) {
     const card = document.createElement('div');
     card.className = 'result-card';
+
     const heading = document.createElement('h3');
     heading.textContent = title;
     card.appendChild(heading);
@@ -148,9 +159,13 @@ function renderResult(title, payload, count, label) {
     }
     card.appendChild(countPara);
 
-    const pre = document.createElement('pre');
-    pre.textContent = truncateJson(payload);
-    card.appendChild(pre);
+    const wrap = document.createElement('div');
+    wrap.className = 'json-tree-wrap';
+    const tree = document.createElement('div');
+    tree.className = 'json-tree';
+    tree.appendChild(buildJsonNode(payload));
+    wrap.appendChild(tree);
+    card.appendChild(wrap);
 
     return card;
 }
@@ -227,6 +242,89 @@ document.getElementById('form-biomed').addEventListener('submit', async (event) 
         resultsEl.innerHTML = `<div class="result-card"><h3>Request failed</h3><p style="color:#a00;">${err.message}</p></div>`;
     }
 });
+
+/* ── Interactive JSON tree builder ── */
+function buildJsonNode(value) {
+  if (Array.isArray(value)) return buildArray(value);
+  if (value !== null && typeof value === "object") return buildObject(value);
+  return buildLeaf(value);
+}
+
+function buildObject(obj) {
+  const keys = Object.keys(obj);
+  if (keys.length === 0) return span("{}", "json-null");
+
+  const wrapper = document.createElement("span");
+  const toggle = document.createElement("span");
+  toggle.className = "json-toggle";
+  toggle.appendChild(span("{", ""));
+  const summary = span(` ${keys.length} key${keys.length !== 1 ? "s" : ""} }`, "json-summary");
+  toggle.appendChild(summary);
+
+  const ul = document.createElement("ul");
+  ul.className = "json-children";
+  keys.forEach(k => {
+    const li = document.createElement("li");
+    li.appendChild(span(`"${k}": `, "json-key"));
+    li.appendChild(buildJsonNode(obj[k]));
+    ul.appendChild(li);
+  });
+
+  toggle.onclick = (e) => { e.stopPropagation(); toggleNode(toggle, ul, summary, keys.length, "key", "keys"); };
+  wrapper.appendChild(toggle);
+  wrapper.appendChild(ul);
+  return wrapper;
+}
+
+function buildArray(arr) {
+  if (arr.length === 0) return span("[]", "json-null");
+
+  const wrapper = document.createElement("span");
+  const toggle = document.createElement("span");
+  toggle.className = "json-toggle";
+  toggle.appendChild(span("[", ""));
+  const summary = span(` ${arr.length} item${arr.length !== 1 ? "s" : ""} ]`, "json-summary");
+  toggle.appendChild(summary);
+
+  const ul = document.createElement("ul");
+  ul.className = "json-children";
+  arr.forEach((v, i) => {
+    const li = document.createElement("li");
+    li.appendChild(span(`${i}: `, "json-key"));
+    li.appendChild(buildJsonNode(v));
+    ul.appendChild(li);
+  });
+
+  toggle.onclick = (e) => { e.stopPropagation(); toggleNode(toggle, ul, summary, arr.length, "item", "items"); };
+  wrapper.appendChild(toggle);
+  wrapper.appendChild(ul);
+  return wrapper;
+}
+
+function buildLeaf(value) {
+  if (value === null) return span("null", "json-null");
+  if (typeof value === "string") return span(`"${value}"`, "json-str");
+  if (typeof value === "number") return span(String(value), "json-num");
+  if (typeof value === "boolean") return span(String(value), "json-bool");
+  return span(String(value), "");
+}
+
+function toggleNode(toggle, ul, summary, count, singular, plural) {
+  const collapsed = toggle.classList.toggle("collapsed");
+  ul.classList.toggle("hidden", collapsed);
+  if (collapsed) {
+    summary.textContent = ` ${count} ${count !== 1 ? plural : singular} }`;
+  } else {
+    summary.textContent = ` ${count} ${count !== 1 ? plural : singular} }`;
+  }
+}
+
+function span(text, cls) {
+  const el = document.createElement("span");
+  if (cls) el.className = cls;
+  el.textContent = text;
+  return el;
+}
     </script>
 </body>
 </html>
