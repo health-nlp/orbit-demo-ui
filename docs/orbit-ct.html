@@ -74,8 +74,7 @@
             background: #fff; font-size: 0.75rem; cursor: pointer; color: #555;
         }
         .copy-btn:hover { background: #eee; }
-        .response-body { padding: 0.75rem; background: #fff; overflow-x: auto; max-height: 480px; overflow-y: auto; }
-        .response-body pre { font-size: 0.8rem; font-family: monospace; white-space: pre-wrap; word-break: break-all; margin: 0; color: #1a1a2e; }
+        .response-body { padding: 0.75rem; background: #fff; overflow-x: auto; max-height: 600px; overflow-y: auto; }
         .spinner {
             display: none; width: 16px; height: 16px; border: 2px solid #ccc;
             border-top-color: #1a1a2e; border-radius: 50%;
@@ -83,6 +82,31 @@
         }
         @keyframes spin { to { transform: rotate(360deg); } }
         .welcome { color: #aaa; font-size: 0.9rem; margin-top: 2rem; }
+
+        /* Interactive JSON tree */
+        .json-tree { font-family: monospace; font-size: 0.8rem; line-height: 1.6; color: #1a1a2e; }
+        .json-tree ul { list-style: none; padding-left: 1.2em; border-left: 1px solid #e0e0e0; margin: 0; }
+        .json-tree li { position: relative; }
+        .json-toggle {
+            cursor: pointer; user-select: none;
+            display: inline-flex; align-items: center; gap: 0.25em;
+        }
+        .json-toggle::before {
+            content: '▾';
+            font-size: 0.7em;
+            color: #888;
+            display: inline-block;
+            width: 1em;
+            transition: transform 0.15s;
+        }
+        .json-toggle.collapsed::before { transform: rotate(-90deg); }
+        .json-key { color: #1a1a2e; font-weight: 600; }
+        .json-str { color: #2e7d32; }
+        .json-num { color: #1565c0; }
+        .json-bool { color: #6a1a6a; }
+        .json-null { color: #999; }
+        .json-summary { color: #aaa; font-size: 0.75em; margin-left: 0.4em; }
+        .json-children.hidden { display: none; }
     </style>
 </head>
 <body>
@@ -109,12 +133,12 @@
                 <div id="panel-form" style="display:none">
                     <h1 id="ep-summary"></h1>
                     <div class="path-label" id="ep-path"></div>
-                    <div class="params-section">
-                        <h3>Parameters</h3>
+                    <div id="ep-params-section" class="params-section">
+                        <!-- <h3>Parameters</h3> -->
                         <div id="ep-params"></div>
+                        <button class="run-btn" id="run-btn" onclick="sendRequest()">Search</button>
+                        <span class="spinner" id="spinner"></span>
                     </div>
-                    <button class="run-btn" id="run-btn" onclick="sendRequest()">Send</button>
-                    <span class="spinner" id="spinner"></span>
                     <div id="response-area"></div>
                 </div>
             </section>
@@ -130,40 +154,38 @@ let currentEndpoint = null;
 const endpoints = [
   {
     method: "GET",
-    path: "/ct/api/v2/version",
-    summary: "Orbit Version",
-    params: []
+    path: "/ct/api/v2/studies",
+    summary: "Studies by Search Term",
+    autoFetch: false,
+    params: [
+      { name: "query", in: "query", required: true, type: "string", description: "Search terms using Essie expression syntax" },
+      // { name: "format", in: "query", required: false, type: "string", description: "Response format", default: "json" },
+      // { name: "pageStart", in: "query", required: false, type: "integer", description: "Start index", default: "0" },
+      // { name: "pageSize", in: "query", required: false, type: "integer", description: "Page size", default: "20" }
+    ]
   },
   {
     method: "GET",
-    path: "/ct/api/v2/studies",
-    summary: "Studies",
+    path: "/ct/api/v2/studies/{nctId}",
+    summary: "Single Study",
+    autoFetch: false,
     params: [
-      { name: "query.term", in: "query", required: true, type: "string", description: "Search term (Essie expression syntax)" },
-      { name: "format", in: "query", required: false, type: "string", description: "Response format", default: "json" },
-      { name: "pageStart", in: "query", required: false, type: "integer", description: "Start index", default: "0" },
-      { name: "pageSize", in: "query", required: false, type: "integer", description: "Page size", default: "20" }
+      { name: "nctId", in: "path", required: true, type: "string", description: "NCT ID (e.g. NCT04280705)" }
     ]
   },
   {
     method: "GET",
     path: "/ct/api/v2/studies/metadata",
     summary: "Studies Metadata",
+    autoFetch: true,
     params: []
   },
   {
     method: "GET",
     path: "/ct/api/v2/studies/search-areas",
     summary: "Studies Search Areas",
+    autoFetch: true,
     params: []
-  },
-  {
-    method: "GET",
-    path: "/ct/api/v2/studies/{nctId}",
-    summary: "Single Study",
-    params: [
-      { name: "nctId", in: "path", required: true, type: "string", description: "NCT ID (e.g. NCT04280705)" }
-    ]
   }
 ];
 
@@ -173,7 +195,7 @@ function buildSidebar() {
     const btn = document.createElement("button");
     btn.className = "endpoint-btn";
     btn.dataset.index = i;
-    btn.innerHTML = `<span class="method-badge">GET</span>${ep.summary}`;
+    btn.innerHTML = ep.summary;
     btn.onclick = () => selectEndpoint(i, btn);
     list.appendChild(btn);
   });
@@ -188,7 +210,15 @@ function selectEndpoint(i, btn) {
   document.getElementById("ep-summary").textContent = currentEndpoint.summary;
   document.getElementById("ep-path").textContent = `GET ${BASE}${currentEndpoint.path}`;
   document.getElementById("response-area").innerHTML = "";
-  renderParams(currentEndpoint.params);
+
+  const paramsSection = document.getElementById("ep-params-section");
+  if (currentEndpoint.autoFetch) {
+    paramsSection.style.display = "none";
+    sendRequest();
+  } else {
+    paramsSection.style.display = "block";
+    renderParams(currentEndpoint.params);
+  }
 }
 
 function renderParams(params) {
@@ -212,8 +242,8 @@ async function sendRequest() {
   if (!currentEndpoint) return;
   const btn = document.getElementById("run-btn");
   const spinner = document.getElementById("spinner");
-  btn.disabled = true;
-  spinner.style.display = "inline-block";
+  if (btn) btn.disabled = true;
+  if (spinner) spinner.style.display = "inline-block";
 
   let url = BASE + currentEndpoint.path;
   const queryParts = [];
@@ -222,7 +252,8 @@ async function sendRequest() {
     const val = document.getElementById(`param-${p.name}`)?.value.trim();
     if (!val && p.required) {
       alert(`"${p.name}" is required.`);
-      btn.disabled = false; spinner.style.display = "none";
+      if (btn) btn.disabled = false;
+      if (spinner) spinner.style.display = "none";
       return;
     }
     if (val) {
@@ -236,40 +267,140 @@ async function sendRequest() {
 
   if (queryParts.length) url += "?" + queryParts.join("&");
 
-  let status = null, body = null, ok = false;
+  let status = null, data = null, ok = false, errMsg = null;
   try {
     const resp = await fetch(url);
     status = resp.status;
     ok = resp.ok;
     const text = await resp.text();
-    try { body = JSON.stringify(JSON.parse(text), null, 2); }
-    catch { body = text; }
+    try { data = JSON.parse(text); }
+    catch { errMsg = text; }
   } catch (e) {
-    body = String(e);
+    errMsg = String(e);
   }
 
-  document.getElementById("response-area").innerHTML = `
+  const area = document.getElementById("response-area");
+  const treeContainer = document.createElement("div");
+  treeContainer.className = "response-body";
+
+  if (data !== null) {
+    const tree = document.createElement("div");
+    tree.className = "json-tree";
+    tree.appendChild(buildJsonNode(data));
+    treeContainer.appendChild(tree);
+  } else {
+    const pre = document.createElement("pre");
+    pre.style.cssText = "font-size:0.8rem;white-space:pre-wrap;word-break:break-all;color:#c62828";
+    pre.textContent = errMsg ?? "Unknown error";
+    treeContainer.appendChild(pre);
+  }
+
+  area.innerHTML = `
     <div class="response-block">
       <div class="response-header">
         <span class="${ok ? 'status-ok' : 'status-err'}">${status ?? 'Network error'}</span>
-        <button class="copy-btn" onclick="copyResponse()">Copy</button>
+        <button class="copy-btn" onclick="copyResponse()">Copy JSON</button>
       </div>
-      <div class="response-body"><pre id="resp-pre">${escHtml(body)}</pre></div>
     </div>`;
+  area.querySelector(".response-block").appendChild(treeContainer);
+  area._rawData = data;
 
-  btn.disabled = false; spinner.style.display = "none";
+  if (btn) btn.disabled = false;
+  if (spinner) spinner.style.display = "none";
 }
 
 function copyResponse() {
-  const text = document.getElementById("resp-pre")?.textContent ?? "";
+  const area = document.getElementById("response-area");
+  const text = area._rawData !== undefined ? JSON.stringify(area._rawData, null, 2) : "";
   navigator.clipboard.writeText(text);
 }
 
-function escHtml(s) {
-  return (s ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+/* ── Interactive JSON tree builder ── */
+function buildJsonNode(value) {
+  if (Array.isArray(value)) return buildArray(value);
+  if (value !== null && typeof value === "object") return buildObject(value);
+  return buildLeaf(value);
+}
+
+function buildObject(obj) {
+  const keys = Object.keys(obj);
+  if (keys.length === 0) return span("{}", "json-null");
+
+  const wrapper = document.createElement("span");
+  const toggle = document.createElement("span");
+  toggle.className = "json-toggle";
+  toggle.appendChild(span("{", ""));
+  const summary = span(` ${keys.length} key${keys.length !== 1 ? "s" : ""} }`, "json-summary");
+  toggle.appendChild(summary);
+
+  const ul = document.createElement("ul");
+  ul.className = "json-children";
+  keys.forEach(k => {
+    const li = document.createElement("li");
+    li.appendChild(span(`"${k}": `, "json-key"));
+    li.appendChild(buildJsonNode(obj[k]));
+    ul.appendChild(li);
+  });
+
+  toggle.onclick = (e) => { e.stopPropagation(); toggleNode(toggle, ul, summary, keys.length, "key", "keys"); };
+  wrapper.appendChild(toggle);
+  wrapper.appendChild(ul);
+  return wrapper;
+}
+
+function buildArray(arr) {
+  if (arr.length === 0) return span("[]", "json-null");
+
+  const wrapper = document.createElement("span");
+  const toggle = document.createElement("span");
+  toggle.className = "json-toggle";
+  toggle.appendChild(span("[", ""));
+  const summary = span(` ${arr.length} item${arr.length !== 1 ? "s" : ""} ]`, "json-summary");
+  toggle.appendChild(summary);
+
+  const ul = document.createElement("ul");
+  ul.className = "json-children";
+  arr.forEach((v, i) => {
+    const li = document.createElement("li");
+    li.appendChild(span(`${i}: `, "json-key"));
+    li.appendChild(buildJsonNode(v));
+    ul.appendChild(li);
+  });
+
+  toggle.onclick = (e) => { e.stopPropagation(); toggleNode(toggle, ul, summary, arr.length, "item", "items"); };
+  wrapper.appendChild(toggle);
+  wrapper.appendChild(ul);
+  return wrapper;
+}
+
+function buildLeaf(value) {
+  if (value === null) return span("null", "json-null");
+  if (typeof value === "string") return span(`"${value}"`, "json-str");
+  if (typeof value === "number") return span(String(value), "json-num");
+  if (typeof value === "boolean") return span(String(value), "json-bool");
+  return span(String(value), "");
+}
+
+function toggleNode(toggle, ul, summary, count, singular, plural) {
+  const collapsed = toggle.classList.toggle("collapsed");
+  ul.classList.toggle("hidden", collapsed);
+  if (collapsed) {
+    summary.textContent = ` ${count} ${count !== 1 ? plural : singular} }`;
+  } else {
+    summary.textContent = ` ${count} ${count !== 1 ? plural : singular} }`;
+  }
+}
+
+function span(text, cls) {
+  const el = document.createElement("span");
+  if (cls) el.className = cls;
+  el.textContent = text;
+  return el;
 }
 
 buildSidebar();
+const firstBtn = document.querySelector(".endpoint-btn");
+if (firstBtn) firstBtn.click();
     </script>
 </body>
 </html>
