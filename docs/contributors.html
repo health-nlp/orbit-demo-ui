@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contributors</title>
+    <style>
+        html, body { min-height: 100%; width: 100%; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6; color: #333;
+            display: flex; flex-direction: column; min-height: 100vh; background: #fff;
+        }
+        header { background: #1a1a2e; color: white; width: 100%; padding: 1rem 1.5rem; }
+        nav {
+            display: flex; justify-content: space-between; align-items: center;
+            max-width: 1200px; width: min(1200px, 100%); margin: 0 auto;
+        }
+        .logo { font-size: 1.5rem; font-weight: bold; }
+        .logo a { color: white; text-decoration: none; }
+        .nav-tabs { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+        .nav-tabs a { color: white; text-decoration: none; padding: 0.5rem 1rem; border-radius: 4px; }
+        .nav-tabs a:hover, .nav-tabs a.active { background: #16213e; }
+        main { max-width: 1200px; width: min(1200px, 100%); margin: 0 auto; padding: 2rem 1.5rem; flex: 1; }
+        .hero { text-align: center; padding: 4rem 0; }
+        .hero h1 { font-size: clamp(2rem, 4vw, 2.75rem); margin-bottom: 1rem; color: #1a1a2e; }
+        .hero p { font-size: 1.1rem; color: #666; max-width: 700px; margin: 0 auto 2rem; }
+        footer { text-align: center; padding: 2rem 1.5rem; background: #f5f5f5; margin-top: 3rem; width: 100%; }
+        footer a { color: #1a1a2e; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="logo"><a href="index.html">Orbit</a></div>
+            <div class="nav-tabs">
+                <a href="orbit-ct.html">Orbit-CT</a>
+                <a href="compare.html">Compare</a>
+                <a href="https://orbit.health-nlp.com/docs">Docs</a>
+                <a href="https://github.com/health-nlp/orbit">Code</a>
+                <a href="contributors.html" class="active">Contributors</a>
+            </div>
+        </nav>
+    </header>
+    <main>
+        <div class="hero">
+            <h1>Contributors</h1>
+            <p>Meet the team behind Orbit.</p>
+        </div>
+        <div class="contributors-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem;">
+            <div class="contributor-card" style="border: 1px solid #eee; border-radius: 10px; overflow: hidden; background: #fff; text-align: center; padding: 1rem;">
+                <img src="https://via.placeholder.com/240" alt="Mert Okur" style="width: 100%; height: auto; display: block; object-fit: cover;">
+                <div style="padding: 1rem;">
+                    <h3 style="margin-bottom: 0.5rem; color: #1a1a2e;">Mert Okur</h3>
+                    <p style="color: #555;">Student, University of Tuebingen</p>
+                </div>
+            </div>
+            <div class="contributor-card" style="border: 1px solid #eee; border-radius: 10px; overflow: hidden; background: #fff; text-align: center; padding: 1rem;">
+                <img src="https://via.placeholder.com/240" alt="Shrestha Ghosh" style="width: 100%; height: auto; display: block; object-fit: cover;">
+                <div style="padding: 1rem;">
+                    <h3 style="margin-bottom: 0.5rem; color: #1a1a2e;">Shrestha Ghosh</h3>
+                    <p style="color: #555;">Postdoc, University of Tuebingen</p>
+                </div>
+            </div>
+            <div class="contributor-card" style="border: 1px solid #eee; border-radius: 10px; overflow: hidden; background: #fff; text-align: center; padding: 1rem;">
+                <img src="https://via.placeholder.com/240" alt="Harry Scells" style="width: 100%; height: auto; display: block; object-fit: cover;">
+                <div style="padding: 1rem;">
+                    <h3 style="margin-bottom: 0.5rem; color: #1a1a2e;">Harry Scells</h3>
+                    <p style="color: #555;">Junior Professor, University of Tuebingen</p>
+                </div>
+            </div>
+        </div>
+    </main>
+    <footer>
+        <p>This work is licensed under a <a href="https://creativecommons.org/licenses/by/4.0/">Creative Commons Attribution 4.0 International License</a>.</p>
+    </footer>
+</body>
+</html>
