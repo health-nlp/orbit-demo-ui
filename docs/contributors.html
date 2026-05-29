@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/x-icon" href="../static/images/orbit-icon.ico">
     <title>Contributors</title>
     <style>
         html, body { min-height: 100%; width: 100%; }
@@ -12,16 +13,16 @@
             line-height: 1.6; color: #333;
             display: flex; flex-direction: column; min-height: 100vh; background: #fff;
         }
-        header { background: #1a1a2e; color: white; width: 100%; padding: 1rem 1.5rem; }
+        header { background: #fff; color: #1a1a2e; width: 100%; padding: 1rem 1.5rem; border-bottom: 1px solid #e0e0e0; }
         nav {
             display: flex; justify-content: space-between; align-items: center;
             max-width: 1200px; width: min(1200px, 100%); margin: 0 auto;
         }
         .logo { font-size: 1.5rem; font-weight: bold; }
-        .logo a { color: white; text-decoration: none; }
+        .logo a { color: #1a1a2e; text-decoration: none; }
         .nav-tabs { display: flex; flex-wrap: wrap; gap: 0.75rem; }
-        .nav-tabs a { color: white; text-decoration: none; padding: 0.5rem 1rem; border-radius: 4px; }
-        .nav-tabs a:hover, .nav-tabs a.active { background: #16213e; }
+        .nav-tabs a { color: #1a1a2e; text-decoration: none; padding: 0.5rem 1rem; border-radius: 4px; }
+        .nav-tabs a:hover, .nav-tabs a.active { background: #f0f0f0; }
         main { max-width: 1200px; width: min(1200px, 100%); margin: 0 auto; padding: 2rem 1.5rem; flex: 1; }
         .hero { text-align: center; padding: 4rem 0; }
         .hero h1 { font-size: clamp(2rem, 4vw, 2.75rem); margin-bottom: 1rem; color: #1a1a2e; }
@@ -33,7 +34,7 @@
 <body>
     <header>
         <nav>
-            <div class="logo"><a href="index.html">Orbit</a></div>
+            <div class="logo"><a href="index.html"><img src="../static/images/orbit.png" alt="Orbit" style="height:64px;vertical-align:middle;margin-right:8px;"></a></div>
             <div class="nav-tabs">
                 <a href="orbit-ct.html">Orbit-CT</a>
                 <a href="compare.html">Compare</a>
