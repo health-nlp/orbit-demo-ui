@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" type="image/x-icon" href="../static/images/orbit-icon.ico">
+    <link rel="icon" type="image/x-icon" href="./images/orbit-icon.png">
     <title>Orbit - Home</title>
     <style>
         html, body { min-height: 100%; width: 100%; }
@@ -35,6 +35,23 @@
         .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2rem; margin-top: 3rem; }
         .feature { padding: 1.5rem; border: 1px solid #eee; border-radius: 8px; background: #fff; }
         .feature h3 { color: #1a1a2e; margin-bottom: 0.5rem; }
+        .code-block { position: relative; margin-top: 0.75rem; }
+        .feature pre {
+            padding: 0.75rem; border-radius: 6px; border: 1px solid #d0d0d0;
+            color: #1e1e1e; font-size: 0.85rem;
+            white-space: pre-wrap; word-break: break-all; overflow-x: auto;
+        }
+        .feature pre .prompt, .flag  { color: #569cd6; }
+        .feature pre .cmd { color: #ce9178; }
+        .copy-btn {
+            position: absolute; top: 0.4rem; right: 0.4rem;
+            padding: 0.2rem 0.5rem; font-size: 0.75rem; border-radius: 4px;
+            border: 1px solid #d0d0d0; background: #fff; cursor: pointer; color: #555;
+        }
+        .copy-btn:hover { background: #f0f0f0; }
+        .copy-btn.copied { color: #2e7d32; border-color: #2e7d32; }
+        a.feature { text-decoration: none; color: inherit; display: block; transition: box-shadow 0.15s, border-color 0.15s; }
+        a.feature:hover { border-color: #1a1a2e; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
         footer { text-align: center; padding: 2rem 1.5rem; background: #f5f5f5; margin-top: 3rem; width: 100%; }
         footer a { color: #1a1a2e; text-decoration: none; }
     </style>
@@ -44,9 +61,9 @@
         <nav>
             <div class="logo"><a href="index.html"><img src="./images/orbit.png" alt="Orbit" style="height:64px;vertical-align:middle;margin-right:8px;"></a></div>
             <div class="nav-tabs">
-                <a href="orbit-ct.html">Orbit-CT</a>
+                <a href="search.html">Search</a>
                 <a href="compare.html">Compare</a>
-                <a href="https://orbit.health-nlp.com/docs">Docs</a>
+                <a href="https://orbit.health-nlp.com/docs">API</a>
                 <a href="https://github.com/health-nlp/orbit">Code</a>
                 <a href="contributors.html">Contributors</a>
             </div>
@@ -54,8 +71,8 @@
     </header>
     <main>
         <div class="hero">
-            <h1>Open Re-implementation of Biomedical Literature APIs</h1>
-            <p>Orbit is a framework for self-hosting clean room re-implementations of biomedical literature APIs.</p>
+            <h1>ORBIT: Open Re-implementation of Biomedical Literature APIs</h1>
+            <!-- <p>A framework for self-hosting re-implementations and extensions of rate-limitedAPIs.</p> -->
         </div>
         <div class="features">
             <div class="feature">
@@ -69,13 +86,29 @@
             <div class="feature">
                 <h3>Self-Hosted</h3>
                 <p>Full Docker-based deployment for local hosting with complete data control.</p>
+                <div class="code-block">
+                    <pre id="docker-cmd"><span class="prompt">$</span> <span class="cmd">docker-compose</span> <span class="flag">-f</span> compose.all.yml <span class="cmd">up</span> <span class="flag">--build</span></pre>
+                </div>
             </div>
+            <a class="feature" href="search.html">
+                <h3>Search</h3>
+                <p>Try out your queries now!</p>
+            </a>
+            <a class="feature" href="compare.html">
+                <h3>Compare</h3>
+                <p>Perform side-by-side comparison of Orbit and the original APIs.</p>
+            </a>
+            <a class="feature" href="https://orbit.health-nlp.com/docs">
+                <h3>API</h3>
+                <p>Check out the full API documentation.</p>
+            </a>
         </div>
-        <div class="use-cases" style="margin-top: 2rem; text-align: center;">
-            <h2>Try it out!</h2>
-            <div class="use-case-buttons" style="margin-top: 1rem; display: flex; justify-content: center; flex-wrap: wrap; gap: 1rem;">
-                <a class="btn" href="orbit-ct.html">Clinical Trials</a>
-                <a class="btn" href="compare.html">Compare</a>
+        <div style="margin-top: 3rem;">
+            <h3 style="color: #1a1a2e; margin-bottom: 1rem; text-align: center;">View the demo</h3>
+            <div style="aspect-ratio: 16/9; background: #f5f5f5; border: 1px solid #e0e0e0; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #999;">
+                <!-- Replace src with your video URL -->
+                <!-- <iframe width="100%" height="100%" src="VIDEO_URL" frameborder="0" allowfullscreen style="border-radius: 8px;"></iframe> -->
+                <span>Video coming soon</span>
             </div>
         </div>
     </main>
