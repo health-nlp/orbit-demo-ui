@@ -117,7 +117,7 @@
             <div class="nav-tabs">
                 <a href="search.html" class="active">Search</a>
                 <a href="compare.html">Compare</a>
-                <a href="https://orbit.health-nlp.com/docs">API</a>
+                <a href="https://orbit-api.health-nlp.com/docs">API</a>
                 <a href="https://github.com/health-nlp/orbit">Code</a>
                 <a href="contributors.html">Contributors</a>
             </div>
@@ -149,7 +149,7 @@
         <p>This work is licensed under a <a href="https://creativecommons.org/licenses/by/4.0/">Creative Commons Attribution 4.0 International License</a>.</p>
     </footer>
     <script>
-const BASE = "https://orbit.health-nlp.com";
+const ORBIT_BASE = "https://orbit-api.health-nlp.com";
 let currentEndpoint = null;
 
 const endpoints = [
@@ -209,7 +209,7 @@ function selectEndpoint(i, btn) {
   document.getElementById("panel-welcome").style.display = "none";
   document.getElementById("panel-form").style.display = "block";
   document.getElementById("ep-summary").textContent = currentEndpoint.summary;
-  document.getElementById("ep-path").textContent = `GET ${BASE}${currentEndpoint.path}`;
+  document.getElementById("ep-path").textContent = `GET ${ORBIT_BASE}${currentEndpoint.path}`;
   document.getElementById("response-area").innerHTML = "";
 
   const paramsSection = document.getElementById("ep-params-section");
@@ -246,7 +246,7 @@ async function sendRequest() {
   if (btn) btn.disabled = true;
   if (spinner) spinner.style.display = "inline-block";
 
-  let url = BASE + currentEndpoint.path;
+  let url = ORBIT_BASE + currentEndpoint.path;
   const queryParts = [];
 
   for (const p of currentEndpoint.params) {
