@@ -118,22 +118,6 @@
             <div id="results-original" class="result-grid"></div>
         </div>
 
-        <!-- Panel 2: Multiple Biomed Sources
-        <div class="query-panel">
-            <div>
-                <div class="panel-title">Multiple Biomed Sources</div>
-                <p>Use Orbit to query multiple biomedical sources (PubMed and ClinicalTrials) at once.</p>
-            </div>
-            <form id="form-biomed">
-                <label for="query-biomed">Enter query terms.</label>
-                <div class="search-row">
-                    <input id="query-biomed" name="query" type="search" placeholder="e.g. oncology" required autocomplete="off" />
-                    <button class="btn" type="submit">Run</button>
-                </div>
-            </form>
-            <div id="results-biomed" class="result-grid"></div>
-        </div> -->
-
     </main>
     <footer>
         <p>This work is licensed under a <a href="https://creativecommons.org/licenses/by/4.0/">Creative Commons Attribution 4.0 International License</a>.</p>
@@ -154,9 +138,9 @@ function renderResult(title, payload, count, label) {
         countPara.textContent = 'Error: ' + payload.error;
         countPara.style.color = '#a00';
     } else if (typeof count === 'number') {
-        countPara.textContent = `Total ${label ?? 'results'} returned: ${count}`;
+        countPara.textContent = `Total hits: ${count} ${label ?? ''}`;
     } else {
-        countPara.textContent = `Total ${label ?? 'results'} returned: unavailable`;
+        countPara.textContent = `Total hits: unavailable`;
     }
     card.appendChild(countPara);
 
@@ -187,7 +171,7 @@ document.getElementById('form-original').addEventListener('submit', async (event
         officialKey = 'pubmed';
     } else {
         orbitUrl = `${ORBIT_BASE}/ct/api/v2/studies?query.term=${term}`;
-        officialUrl = `https://clinicaltrials.gov/api/v2/studies?query.term=${term}`;
+        officialUrl = `https://clinicaltrials.gov/api/v2/studies?query.term=${term}&pageSize=10&countTotal=true`;
         officialKey = 'clinicaltrials';
     }
 
@@ -203,46 +187,16 @@ document.getElementById('form-original').addEventListener('submit', async (event
         const data = { orbit: orbitData, [officialKey]: officialData };
         resultsEl.innerHTML = '';
         const officialLabel = official === 'pubmed' ? 'PubMed Entrez API' : 'ClinicalTrials.gov API';
+        const label = official === "pubmed" ? "docs" : "trials";
 
         const orbitCount = data.orbit?.totalCount ?? (data.orbit?.esearch?.count != null ? parseInt(data.orbit.esearch.count, 10) : null);
-        const officialCount = data.clinicaltrials?.studies?.length ?? (data.pubmed?.esearchresult?.count != null ? parseInt(data.pubmed.esearchresult.count, 10) : null);
-        resultsEl.appendChild(renderResult('Orbit API', data.orbit, orbitCount, 'trials'));
-        resultsEl.appendChild(renderResult(officialLabel, data[officialKey], officialCount, 'trials'));
+        const officialCount = data.clinicaltrials?.totalCount ?? (data.pubmed?.esearchresult?.count != null ? parseInt(data.pubmed.esearchresult.count, 10) : null);
+        resultsEl.appendChild(renderResult('Orbit API', data.orbit, orbitCount, label));
+        resultsEl.appendChild(renderResult(officialLabel, data[officialKey], officialCount, label));
     } catch (err) {
         resultsEl.innerHTML = `<div class="result-card"><h3>Request failed</h3><p style="color:#a00;">${err.message}</p></div>`;
     }
 });
-
-// document.getElementById('form-biomed').addEventListener('submit', async (event) => {
-//     event.preventDefault();
-//     const query = document.getElementById('query-biomed').value.trim();
-//     if (!query) return;
-//     const resultsEl = document.getElementById('results-biomed');
-//     resultsEl.innerHTML = '<p>Loading comparison results…</p>';
-
-//     const term = encodeURIComponent(query);
-//     const orbitCtUrl = `${ORBIT_BASE}/ct/api/v2/studies?query.term=${term}`;
-//     const orbitPubmedUrl = `${ORBIT_BASE}/entrez/eutils/esearch.fcgi?term=${term}&retmode=json`;
-
-//     try {
-//         const [ctResp, pubmedResp] = await Promise.allSettled([fetch(orbitCtUrl), fetch(orbitPubmedUrl)]);
-//         const ctData = ctResp.status === 'fulfilled' && ctResp.value.ok
-//             ? await ctResp.value.json()
-//             : { error: ctResp.reason?.message ?? 'Request failed' };
-//         const pubmedData = pubmedResp.status === 'fulfilled' && pubmedResp.value.ok
-//             ? await pubmedResp.value.json()
-//             : { error: pubmedResp.reason?.message ?? 'Request failed' };
-
-//         const data = { clinicaltrials: ctData, pubmed: pubmedData };
-//         resultsEl.innerHTML = '';
-//         const pubmedCount = data.pubmed?.esearch?.count != null ? parseInt(data.pubmed.esearch.count, 10) : null;
-//         const ctCount = data.clinicaltrials?.totalCount ?? null;
-//         resultsEl.appendChild(renderResult('PubMed', data.pubmed, pubmedCount, 'results'));
-//         resultsEl.appendChild(renderResult('ClinicalTrials', data.clinicaltrials, ctCount, 'results'));
-//     } catch (err) {
-//         resultsEl.innerHTML = `<div class="result-card"><h3>Request failed</h3><p style="color:#a00;">${err.message}</p></div>`;
-//     }
-// });
 
 /* ── Interactive JSON tree builder ── */
 function buildJsonNode(value) {

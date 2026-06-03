@@ -79,6 +79,17 @@
         .json-null { color: #999; }
         .json-summary { color: #aaa; font-size: 0.75em; margin-left: 0.4em; }
         .json-children.hidden { display: none; }
+
+        /* SERP-style results */
+        .serp-card { padding: 1rem; border: 1px solid #e3e3e3; border-radius: 10px; background: white; }
+        .serp-card h3 { margin-bottom: 0.4rem; color: #16213e; }
+        .serp-count { font-size: 0.9rem; color: #555; margin-bottom: 0.75rem; }
+        .serp-list { list-style: none; padding: 0; margin: 0; }
+        .serp-card .serp-list-wrap { max-height: 400px; overflow-y: auto; }
+        .serp-list li { padding: 0.25rem 0; border-bottom: 1px solid #f0f0f0; font-size: 0.9rem; }
+        .serp-list li:last-child { border-bottom: none; }
+        .serp-list a { color: #1a0dab; text-decoration: none; }
+        .serp-list a:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
@@ -119,77 +130,63 @@
     <script>
 const ORBIT_BASE = "https://orbit.health-nlp.com";
 
-function renderResult(title, payload, count, label) {
+function renderSerpCard(title, payload, type) {
     const card = document.createElement('div');
-    card.className = 'result-card';
+    card.className = 'serp-card';
 
     const heading = document.createElement('h3');
     heading.textContent = title;
     card.appendChild(heading);
 
     const countPara = document.createElement('p');
+    countPara.className = 'serp-count';
+
     if (payload?.error) {
         countPara.textContent = 'Error: ' + payload.error;
         countPara.style.color = '#a00';
-    } else if (typeof count === 'number') {
-        countPara.textContent = `Total ${label ?? 'results'} returned: ${count}`;
-    } else {
-        countPara.textContent = `Total ${label ?? 'results'} returned: unavailable`;
+        card.appendChild(countPara);
+        return card;
     }
+
+    let ids = [];
+    let totalCount = null;
+
+    if (type === 'pubmed') {
+        const result = payload?.esearch ?? payload?.esearchresult;
+        totalCount = result?.count != null ? parseInt(result.count, 10) : null;
+        ids = result?.idlist ?? [];
+    } else if (type === 'clinicaltrials') {
+        totalCount = payload?.totalCount ?? null;
+        ids = (payload?.studies ?? []).map(s => s?.protocolSection?.identificationModule?.nctId).filter(Boolean);
+    }
+
+    countPara.textContent = totalCount != null ? `${totalCount.toLocaleString()} hits` : 'Total hits: unavailable';
     card.appendChild(countPara);
 
     const wrap = document.createElement('div');
-    wrap.className = 'json-tree-wrap';
-    const tree = document.createElement('div');
-    tree.className = 'json-tree';
-    tree.appendChild(buildJsonNode(payload));
-    wrap.appendChild(tree);
+    wrap.className = 'serp-list-wrap';
+    const list = document.createElement('ul');
+    list.className = 'serp-list';
+    ids.forEach(id => {
+        const li = document.createElement('li');
+        const a = document.createElement('a');
+        a.textContent = id;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        if (type === 'pubmed') {
+            a.href = `https://pubmed.ncbi.nlm.nih.gov/${id}/`;
+        } else {
+            a.href = `https://clinicaltrials.gov/study/${id}`;
+        }
+        li.appendChild(a);
+        list.appendChild(li);
+    });
+    wrap.appendChild(list);
     card.appendChild(wrap);
 
     return card;
 }
 
-// document.getElementById('form-original').addEventListener('submit', async (event) => {
-//     event.preventDefault();
-//     const query = document.getElementById('query-original').value.trim();
-//     if (!query) return;
-//     const official = document.querySelector('input[name="official_api"]:checked').value;
-//     const resultsEl = document.getElementById('results-original');
-//     resultsEl.innerHTML = '<p>Loading comparison results…</p>';
-
-//     const term = encodeURIComponent(query);
-//     let orbitUrl, officialUrl, officialKey;
-//     if (official === 'pubmed') {
-//         orbitUrl = `${ORBIT_BASE}/entrez/eutils/esearch.fcgi?term=${term}&retmode=json`;
-//         officialUrl = `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=${term}&retmode=json`;
-//         officialKey = 'pubmed';
-//     } else {
-//         orbitUrl = `${ORBIT_BASE}/ct/api/v2/studies?query.term=${term}`;
-//         officialUrl = `https://clinicaltrials.gov/api/v2/studies?query.term=${term}`;
-//         officialKey = 'clinicaltrials';
-//     }
-
-//     try {
-//         const [orbitResp, officialResp] = await Promise.allSettled([fetch(orbitUrl), fetch(officialUrl)]);
-//         const orbitData = orbitResp.status === 'fulfilled' && orbitResp.value.ok
-//             ? await orbitResp.value.json()
-//             : { error: orbitResp.reason?.message ?? 'Request failed' };
-//         const officialData = officialResp.status === 'fulfilled' && officialResp.value.ok
-//             ? await officialResp.value.json()
-//             : { error: officialResp.reason?.message ?? 'Request failed' };
-
-//         const data = { orbit: orbitData, [officialKey]: officialData };
-//         resultsEl.innerHTML = '';
-//         const officialLabel = official === 'pubmed' ? 'PubMed Entrez API' : 'ClinicalTrials.gov API';
-
-//         const orbitCount = data.orbit?.totalCount ?? (data.orbit?.esearch?.count != null ? parseInt(data.orbit.esearch.count, 10) : null);
-//         const officialCount = data.clinicaltrials?.studies?.length ?? (data.pubmed?.esearchresult?.count != null ? parseInt(data.pubmed.esearchresult.count, 10) : null);
-//         resultsEl.appendChild(renderResult('Orbit API', data.orbit, orbitCount, 'trials'));
-//         resultsEl.appendChild(renderResult(officialLabel, data[officialKey], officialCount, 'trials'));
-//     } catch (err) {
-//         resultsEl.innerHTML = `<div class="result-card"><h3>Request failed</h3><p style="color:#a00;">${err.message}</p></div>`;
-//     }
-// });
 
 document.getElementById('form-biomed').addEventListener('submit', async (event) => {
     event.preventDefault();
@@ -213,10 +210,8 @@ document.getElementById('form-biomed').addEventListener('submit', async (event) 
 
         const data = { clinicaltrials: ctData, pubmed: pubmedData };
         resultsEl.innerHTML = '';
-        const pubmedCount = data.pubmed?.esearch?.count != null ? parseInt(data.pubmed.esearch.count, 10) : null;
-        const ctCount = data.clinicaltrials?.totalCount ?? null;
-        resultsEl.appendChild(renderResult('PubMed', data.pubmed, pubmedCount, 'results'));
-        resultsEl.appendChild(renderResult('ClinicalTrials', data.clinicaltrials, ctCount, 'results'));
+        resultsEl.appendChild(renderSerpCard('PubMed', data.pubmed, 'pubmed'));
+        resultsEl.appendChild(renderSerpCard('ClinicalTrials', data.clinicaltrials, 'clinicaltrials'));
     } catch (err) {
         resultsEl.innerHTML = `<div class="result-card"><h3>Request failed</h3><p style="color:#a00;">${err.message}</p></div>`;
     }
