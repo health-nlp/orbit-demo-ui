@@ -86,9 +86,9 @@
         .serp-count { font-size: 0.9rem; color: #555; margin-bottom: 0.75rem; }
         .serp-list { list-style: none; padding: 0; margin: 0; }
         .serp-card .serp-list-wrap { max-height: 400px; overflow-y: auto; }
-        .serp-list li { padding: 0.25rem 0; border-bottom: 1px solid #f0f0f0; font-size: 0.9rem; }
+        .serp-list li { padding: 0.25rem 0; border-bottom: 1px solid #f0f0f0; font-size: 0.9rem; display: flex; align-items: baseline; gap: 0.4rem; min-width: 0; }
         .serp-list li:last-child { border-bottom: none; }
-        .serp-list a { color: #1a0dab; text-decoration: none; }
+        .serp-list a { color: #1a0dab; text-decoration: none; flex-shrink: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; flex: 1; min-width: 0; }
         .serp-list a:hover { text-decoration: underline; }
     </style>
 </head>
@@ -110,8 +110,8 @@
         <!-- Panel 2: Multiple Biomed Sources -->
         <div class="query-panel">
             <div>
-                <div class="panel-title">Search Biomed Literature</div>
-                <p>Use Orbit to query multiple biomedical sources (PubMed and ClinicalTrials) at once.</p>
+                <div class="panel-title">Search Biomedical Literature</div>
+                <p>Search PubMed and ClinicalTrials.gov databases with Orbit.</p>
             </div>
             <form id="form-biomed">
                 <label for="query-biomed"></label>
@@ -130,7 +130,7 @@
     <script>
 const ORBIT_BASE = "https://orbit-api.health-nlp.com";
 
-function renderSerpCard(title, payload, type) {
+function renderSerpCard(title, payload, type, titleMap = {}) {
     const card = document.createElement('div');
     card.className = 'serp-card';
 
@@ -171,6 +171,8 @@ function renderSerpCard(title, payload, type) {
         const li = document.createElement('li');
         const a = document.createElement('a');
         a.textContent = id;
+        a.title = id;
+        a.className = 'serp-title';
         a.target = '_blank';
         a.rel = 'noopener noreferrer';
         if (type === 'pubmed') {
@@ -179,12 +181,40 @@ function renderSerpCard(title, payload, type) {
             a.href = `https://clinicaltrials.gov/study/${id}`;
         }
         li.appendChild(a);
+
+        const docTitle = titleMap[id];
+        if (docTitle) {
+            const span = document.createElement('span');
+            span.textContent = ": " + docTitle;
+            span.title = docTitle;
+            a.appendChild(span);
+        }
+
         list.appendChild(li);
     });
     wrap.appendChild(list);
     card.appendChild(wrap);
 
     return card;
+}
+
+
+async function fetchPubmedTitles(ids) {
+    if (!ids.length) return {};
+    const url = `${ORBIT_BASE}/entrez/eutils/efetch.fcgi?id=${ids.join(',')}&retmode=json`;
+    try {
+        const resp = await fetch(url);
+        if (!resp.ok) return {};
+        const data = await resp.json();
+        const articleSet = data?.efetch?.articles;
+        const map = {};
+        articleSet.forEach(article => {
+            if (article.id && article.title) map[article.id] = article.title;
+        });
+        return map;
+    } catch {
+        return {};
+    }
 }
 
 
@@ -209,96 +239,26 @@ document.getElementById('form-biomed').addEventListener('submit', async (event) 
             : { error: pubmedResp.reason?.message ?? 'Request failed' };
 
         const data = { clinicaltrials: ctData, pubmed: pubmedData };
+
+        const pubmedResult = data.pubmed?.esearch ?? data.pubmed?.esearchresult;
+        const pubmedIds = pubmedResult?.idlist ?? [];
+        const pubmedTitleMap = await fetchPubmedTitles(pubmedIds);
+
+        const ctTitleMap = {};
+        (data.clinicaltrials?.studies ?? []).forEach(s => {
+            const id = s?.protocolSection?.identificationModule?.nctId;
+            const title = s?.protocolSection?.identificationModule?.briefTitle;
+            if (id && title) ctTitleMap[id] = title;
+        });
+
         resultsEl.innerHTML = '';
-        resultsEl.appendChild(renderSerpCard('PubMed', data.pubmed, 'pubmed'));
-        resultsEl.appendChild(renderSerpCard('ClinicalTrials', data.clinicaltrials, 'clinicaltrials'));
+        resultsEl.appendChild(renderSerpCard('PubMed', data.pubmed, 'pubmed', pubmedTitleMap));
+        resultsEl.appendChild(renderSerpCard('ClinicalTrials', data.clinicaltrials, 'clinicaltrials', ctTitleMap));
     } catch (err) {
         resultsEl.innerHTML = `<div class="result-card"><h3>Request failed</h3><p style="color:#a00;">${err.message}</p></div>`;
     }
 });
 
-/* ── Interactive JSON tree builder ── */
-function buildJsonNode(value) {
-  if (Array.isArray(value)) return buildArray(value);
-  if (value !== null && typeof value === "object") return buildObject(value);
-  return buildLeaf(value);
-}
-
-function buildObject(obj) {
-  const keys = Object.keys(obj);
-  if (keys.length === 0) return span("{}", "json-null");
-
-  const wrapper = document.createElement("span");
-  const toggle = document.createElement("span");
-  toggle.className = "json-toggle";
-  toggle.appendChild(span("{", ""));
-  const summary = span(` ${keys.length} key${keys.length !== 1 ? "s" : ""} }`, "json-summary");
-  toggle.appendChild(summary);
-
-  const ul = document.createElement("ul");
-  ul.className = "json-children";
-  keys.forEach(k => {
-    const li = document.createElement("li");
-    li.appendChild(span(`"${k}": `, "json-key"));
-    li.appendChild(buildJsonNode(obj[k]));
-    ul.appendChild(li);
-  });
-
-  toggle.onclick = (e) => { e.stopPropagation(); toggleNode(toggle, ul, summary, keys.length, "key", "keys"); };
-  wrapper.appendChild(toggle);
-  wrapper.appendChild(ul);
-  return wrapper;
-}
-
-function buildArray(arr) {
-  if (arr.length === 0) return span("[]", "json-null");
-
-  const wrapper = document.createElement("span");
-  const toggle = document.createElement("span");
-  toggle.className = "json-toggle";
-  toggle.appendChild(span("[", ""));
-  const summary = span(` ${arr.length} item${arr.length !== 1 ? "s" : ""} ]`, "json-summary");
-  toggle.appendChild(summary);
-
-  const ul = document.createElement("ul");
-  ul.className = "json-children";
-  arr.forEach((v, i) => {
-    const li = document.createElement("li");
-    li.appendChild(span(`${i}: `, "json-key"));
-    li.appendChild(buildJsonNode(v));
-    ul.appendChild(li);
-  });
-
-  toggle.onclick = (e) => { e.stopPropagation(); toggleNode(toggle, ul, summary, arr.length, "item", "items"); };
-  wrapper.appendChild(toggle);
-  wrapper.appendChild(ul);
-  return wrapper;
-}
-
-function buildLeaf(value) {
-  if (value === null) return span("null", "json-null");
-  if (typeof value === "string") return span(`"${value}"`, "json-str");
-  if (typeof value === "number") return span(String(value), "json-num");
-  if (typeof value === "boolean") return span(String(value), "json-bool");
-  return span(String(value), "");
-}
-
-function toggleNode(toggle, ul, summary, count, singular, plural) {
-  const collapsed = toggle.classList.toggle("collapsed");
-  ul.classList.toggle("hidden", collapsed);
-  if (collapsed) {
-    summary.textContent = ` ${count} ${count !== 1 ? plural : singular} }`;
-  } else {
-    summary.textContent = ` ${count} ${count !== 1 ? plural : singular} }`;
-  }
-}
-
-function span(text, cls) {
-  const el = document.createElement("span");
-  if (cls) el.className = cls;
-  el.textContent = text;
-  return el;
-}
     </script>
 </body>
 </html>
